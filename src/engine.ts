@@ -14,6 +14,8 @@ import yaml from 'js-yaml';
 import { type CliCommand, type InternalCliCommand, type Arg, Strategy, registerCommand } from './registry.js';
 import type { IPage } from './types.js';
 import { executePipeline } from './pipeline.js';
+import { log } from './logger.js';
+import { AdapterLoadError } from './errors.js';
 
 /** Set of TS module paths that have been loaded */
 const _loadedModules = new Set<string>();
@@ -84,7 +86,7 @@ function loadFromManifest(manifestPath: string, clisDir: string): void {
       }
     }
   } catch (err: any) {
-    process.stderr.write(`Warning: failed to load manifest ${manifestPath}: ${err.message}\n`);
+    log.warn(`Failed to load manifest ${manifestPath}: ${err.message}`);
   }
 }
 
@@ -107,7 +109,7 @@ async function discoverClisFromFs(dir: string): Promise<void> {
       ) {
         promises.push(
           import(`file://${filePath}`).catch((err: any) => {
-            process.stderr.write(`Warning: failed to load module ${filePath}: ${err.message}\n`);
+            log.warn(`Failed to load module ${filePath}: ${err.message}`);
           })
         );
       }
@@ -158,7 +160,7 @@ function registerYamlCli(filePath: string, defaultSite: string): void {
 
     registerCommand(cmd);
   } catch (err: any) {
-    process.stderr.write(`Warning: failed to load ${filePath}: ${err.message}\n`);
+    log.warn(`Failed to load ${filePath}: ${err.message}`);
   }
 }
 
@@ -180,7 +182,10 @@ export async function executeCommand(
         await import(`file://${modulePath}`);
         _loadedModules.add(modulePath);
       } catch (err: any) {
-        throw new Error(`Failed to load adapter module ${modulePath}: ${err.message}`);
+        throw new AdapterLoadError(
+          `Failed to load adapter module ${modulePath}: ${err.message}`,
+          'Check that the adapter file exists and has no syntax errors.',
+        );
       }
     }
     // After loading, the module's cli() call will have updated the registry

@@ -11,10 +11,11 @@ import chalk from 'chalk';
 import { discoverClis, executeCommand } from './engine.js';
 import { type CliCommand, fullName, getRegistry, strategyLabel } from './registry.js';
 import { render as renderOutput } from './output.js';
-import { PlaywrightMCP } from './browser.js';
+import { PlaywrightMCP } from './browser/index.js';
 import { browserSession, DEFAULT_BROWSER_COMMAND_TIMEOUT, runWithTimeout } from './runtime.js';
 import { PKG_VERSION } from './version.js';
 import { getCompletions, printCompletionScript } from './completion.js';
+import { CliError } from './errors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -212,8 +213,14 @@ for (const [, cmd] of registry) {
       }
       renderOutput(result, { fmt: actionOpts.format, columns: cmd.columns, title: `${cmd.site}/${cmd.name}`, elapsed: (Date.now() - startTime) / 1000, source: fullName(cmd) });
     } catch (err: any) { 
-      if (actionOpts.verbose && err.stack) { console.error(chalk.red(err.stack)); }
-      else { console.error(chalk.red(`Error: ${err.message ?? err}`)); }
+      if (err instanceof CliError) {
+        console.error(chalk.red(`Error [${err.code}]: ${err.message}`));
+        if (err.hint) console.error(chalk.yellow(`Hint: ${err.hint}`));
+      } else if (actionOpts.verbose && err.stack) {
+        console.error(chalk.red(err.stack));
+      } else {
+        console.error(chalk.red(`Error: ${err.message ?? err}`));
+      }
       process.exitCode = 1; 
     }
   });

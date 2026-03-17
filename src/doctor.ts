@@ -6,7 +6,7 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import chalk from 'chalk';
 import type { IPage } from './types.js';
-import { PlaywrightMCP, getTokenFingerprint } from './browser.js';
+import { PlaywrightMCP, getTokenFingerprint } from './browser/index.js';
 import { browserSession } from './runtime.js';
 
 const PLAYWRIGHT_SERVER_NAME = 'playwright';

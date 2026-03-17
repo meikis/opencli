@@ -24,7 +24,7 @@ import {
   upsertTomlConfigToken,
   writeFileWithMkdir,
 } from './doctor.js';
-import { getTokenFingerprint } from './browser.js';
+import { getTokenFingerprint } from './browser/index.js';
 import { type CheckboxItem, checkboxPrompt } from './tui.js';
 
 export async function runSetup(opts: { cliVersion?: string; token?: string } = {}) {

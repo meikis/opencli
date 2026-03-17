@@ -7,6 +7,7 @@
  */
 
 import { getRegistry } from './registry.js';
+import { CliError } from './errors.js';
 
 // ── Dynamic completion logic ───────────────────────────────────────────────
 
@@ -123,7 +124,6 @@ export function printCompletionScript(shell: string): void {
       process.stdout.write(fishCompletionScript());
       break;
     default:
-      console.error(`Unsupported shell: ${shell}. Supported: bash, zsh, fish`);
-      process.exitCode = 1;
+      throw new CliError('UNSUPPORTED_SHELL', `Unsupported shell: ${shell}. Supported: bash, zsh, fish`);
   }
 }

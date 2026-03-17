@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PlaywrightMCP, __test__ } from './browser.js';
+import { PlaywrightMCP, __test__ } from './browser/index.js';
 
 describe('browser helpers', () => {
   it('creates JSON-RPC requests with unique ids', () => {
