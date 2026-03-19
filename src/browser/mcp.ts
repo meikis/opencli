@@ -1,8 +1,5 @@
 /**
  * Browser session manager — auto-spawns daemon and provides IPage.
- *
- * Replaces the old PlaywrightMCP class. Still exports as PlaywrightMCP
- * for backward compatibility with main.ts and other consumers.
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -15,21 +12,17 @@ import { isDaemonRunning, isExtensionConnected } from './daemon-client.js';
 
 const DAEMON_SPAWN_TIMEOUT = 10000; // 10s to wait for daemon + extension
 
-export type PlaywrightMCPState = 'idle' | 'connecting' | 'connected' | 'closing' | 'closed';
-
-
+export type BrowserBridgeState = 'idle' | 'connecting' | 'connected' | 'closing' | 'closed';
 
 /**
  * Browser factory: manages daemon lifecycle and provides IPage instances.
- *
- * Kept as `PlaywrightMCP` class name for backward compatibility.
  */
-export class PlaywrightMCP {
-  private _state: PlaywrightMCPState = 'idle';
+export class BrowserBridge {
+  private _state: BrowserBridgeState = 'idle';
   private _page: Page | null = null;
   private _daemonProc: ChildProcess | null = null;
 
-  get state(): PlaywrightMCPState {
+  get state(): BrowserBridgeState {
     return this._state;
   }
 
@@ -113,3 +106,6 @@ export class PlaywrightMCP {
     );
   }
 }
+
+/** @deprecated Use BrowserBridge instead */
+export const PlaywrightMCP = BrowserBridge;

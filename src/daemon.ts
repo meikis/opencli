@@ -114,8 +114,8 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
       const result = await new Promise<unknown>((resolve, reject) => {
         const timer = setTimeout(() => {
           pending.delete(body.id);
-          reject(new Error('Command timeout (30s)'));
-        }, 30000);
+          reject(new Error('Command timeout (120s)'));
+        }, 120000);
         pending.set(body.id, { resolve, reject, timer });
         extensionWs!.send(JSON.stringify(body));
       });

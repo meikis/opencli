@@ -32,7 +32,7 @@ export function withTimeoutMs<T>(promise: Promise<T>, timeoutMs: number, message
   });
 }
 
-/** Interface for browser factory (PlaywrightMCP or test mocks) */
+/** Interface for browser factory (BrowserBridge or test mocks) */
 export interface IBrowserFactory {
   connect(opts?: { timeout?: number }): Promise<IPage>;
   close(): Promise<void>;

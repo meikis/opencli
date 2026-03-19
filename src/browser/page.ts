@@ -183,12 +183,12 @@ export class Page implements IPage {
     return sendCommand('exec', { code, ...this._tabOpt() });
   }
 
-  async consoleMessages(level: string = 'info'): Promise<any> {
-    // Console messages can't be retrospectively read via CDP Runtime.evaluate.
-    // Would need Runtime.consoleAPICalled event listener, which is not yet implemented.
-    if (process.env.OPENCLI_VERBOSE) {
-      console.error('[page] consoleMessages() not supported in lightweight mode — returning empty');
-    }
+  /**
+   * Console messages are not available in lightweight daemon mode.
+   * Would require CDP Runtime.consoleAPICalled event listener.
+   * @returns Always returns empty array.
+   */
+  async consoleMessages(_level: string = 'info'): Promise<any> {
     return [];
   }
 
