@@ -11,6 +11,7 @@
 
 import { execFileSync, spawn } from 'node:child_process';
 import { request as httpRequest } from 'node:http';
+import * as path from 'node:path';
 import type { ElectronAppEntry } from './electron-apps.js';
 import { getElectronApp } from './electron-apps.js';
 import { confirmPrompt } from './tui.js';
@@ -103,6 +104,78 @@ function resolveExecutable(appPath: string, processName: string): string {
   return `${appPath}/Contents/MacOS/${processName}`;
 }
 
+function isMissingExecutableError(err: unknown, label: string): boolean {
+  return err instanceof CommandExecutionError
+    && err.message.startsWith(`Could not launch ${label}: executable not found at `);
+}
+
+export function resolveExecutableCandidates(appPath: string, app: ElectronAppEntry): string[] {
+  const executableNames = app.executableNames?.length ? app.executableNames : [app.processName];
+  return [...new Set(executableNames)].map((name) => resolveExecutable(appPath, name));
+}
+
+export async function launchDetachedApp(executable: string, args: string[], label: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(executable, args, {
+      detached: true,
+      stdio: 'ignore',
+    });
+
+    const onError = (err: NodeJS.ErrnoException): void => {
+      if (err.code === 'ENOENT') {
+        reject(new CommandExecutionError(
+          `Could not launch ${label}: executable not found at ${executable}`,
+          `Install ${label}, reinstall it, or register a custom app path in ~/.opencli/apps.yaml`,
+        ));
+        return;
+      }
+
+      reject(new CommandExecutionError(
+        `Failed to launch ${label}`,
+        err.message,
+      ));
+    };
+
+    child.once('error', onError);
+    child.once('spawn', () => {
+      child.off('error', onError);
+      child.unref();
+      resolve();
+    });
+  });
+}
+
+export async function launchElectronApp(appPath: string, app: ElectronAppEntry, args: string[], label: string): Promise<void> {
+  const executables = resolveExecutableCandidates(appPath, app);
+  let lastMissingExecutableError: CommandExecutionError | undefined;
+
+  for (const executable of executables) {
+    log.debug(`[launcher] Launching: ${executable} ${args.join(' ')}`);
+    try {
+      await launchDetachedApp(executable, args, label);
+      return;
+    } catch (err) {
+      if (isMissingExecutableError(err, label)) {
+        lastMissingExecutableError = err as CommandExecutionError;
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (executables.length > 1) {
+    throw new CommandExecutionError(
+      `Could not launch ${label}: no compatible executable found in ${path.join(appPath, 'Contents', 'MacOS')}`,
+      `Tried: ${executables.map((executable) => path.basename(executable)).join(', ')}. Install ${label}, reinstall it, or register a custom app path in ~/.opencli/apps.yaml`,
+    );
+  }
+
+  throw lastMissingExecutableError ?? new CommandExecutionError(
+    `Could not launch ${label}`,
+    `Install ${label}, reinstall it, or register a custom app path in ~/.opencli/apps.yaml`,
+  );
+}
+
 async function pollForReady(port: number): Promise<void> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -178,15 +251,8 @@ export async function resolveElectronEndpoint(site: string): Promise<string> {
   }
 
   // Step 4: Launch
-  const executable = resolveExecutable(appPath, processName);
   const args = [`--remote-debugging-port=${port}`, ...(app.extraArgs ?? [])];
-  log.debug(`[launcher] Launching: ${executable} ${args.join(' ')}`);
-
-  const child = spawn(executable, args, {
-    detached: true,
-    stdio: 'ignore',
-  });
-  child.unref();
+  await launchElectronApp(appPath, app, args, label);
 
   // Step 5: Poll for readiness
   process.stderr.write(`  Waiting for ${label} on port ${port}...\n`);
