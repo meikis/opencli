@@ -4,7 +4,7 @@ const { mockWarn } = vi.hoisted(() => ({
   mockWarn: vi.fn(),
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/logger.js', () => ({
   log: {
     info: vi.fn(),
     warn: mockWarn,
@@ -16,8 +16,8 @@ vi.mock('../../logger.js', () => ({
   },
 }));
 
-import { ArgumentError, AuthRequiredError, CommandExecutionError, EmptyResultError } from '../../errors.js';
-import { getRegistry } from '../../registry.js';
+import { ArgumentError, AuthRequiredError, CommandExecutionError, EmptyResultError } from '../../src/errors.js';
+import { getRegistry } from '../../src/registry.js';
 import {
   classifyXueqiuCommentsResponse,
   collectCommentRows,
